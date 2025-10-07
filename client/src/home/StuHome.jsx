@@ -19,12 +19,15 @@ import {
     HddTwoTone
 } from '@ant-design/icons';
 import { useUserActions } from '_actions';
-
+import { useProfileAction } from '_actions';
+import { profileAtom } from '_state';
 export { StuHome };
 
 
 
 function StuHome() {
+    const [profile, setProfile] = useRecoilState(profileAtom);
+    const getProfile = useProfileAction();
     const userData = JSON.parse(localStorage.getItem("userData"));
     const classWrapper = useClassWrapper();
     const userActions = useUserActions();
@@ -36,6 +39,12 @@ function StuHome() {
         phone_number: '02938278424',
         vnu_id: '',
     });
+
+    useEffect(() => {
+        getProfile.getMyProfile().then(newProfile => {
+            setProfile(newProfile);
+        });
+    }, []);
     
     useEffect(() =>{
         console.log("Reconstruct StuHome");
@@ -50,7 +59,7 @@ function StuHome() {
         initStuHome();        
     },[]);
 
-    return (userData.role && <>
+    return (userData?.role && <>
     
             {(userData.role === "student") && 
                 <>
@@ -63,11 +72,13 @@ function StuHome() {
                                         <Link to={`/profile`}>
                                         <Card hoverable style={{ width: 500, height: 310 }}>
                                             <h5>Thông tin cá nhân</h5>
-                                            <h3>{userData.name}</h3><br/>
+                                            <h3>{profile?.name || ""}</h3><br/>
                                             Vai trò<br/>
-                                            <h4>{userData.role == "student"? "Sinh viên" : "Cố vấn học tập"}</h4>
-                                            Lớp hiện tại<br/>
-                                            <h4>{classWrapper.curClass? classWrapper.curClass.class_name : "Vui lòng chọn lớp để bắt đầu" }</h4>
+                                            <h4>{userData.role == "student"? "Sinh viên" : "Cố vấn học tập"}</h4><br />
+                                            Email<br/>
+                                            <h4>{profile?.email || ""}</h4><br />
+                                            {/* Lớp hiện tại<br/>
+                                            <h4>{classWrapper.curClass? classWrapper.curClass.class_name : "Vui lòng chọn lớp để bắt đầu" }</h4> */}
                                         </Card></Link>
                             </Col>
                             <Col flex='200px'>
@@ -150,8 +161,8 @@ function StuHome() {
                             
                             <br/>
                             <b>Ứng dụng Quản lý Sinh viên - Cố vấn học tập</b><br/>
-                            <b>Bài tập lớn môn Lập trình ứng dụng Web</b><br/>
-                            <b>Thực hiện bởi:</b> {" Trần Xuân Bách, Đặng Thế Hoàng Anh, Nguyễn Việt Anh, Hoàng Hữu Bách, Nguyễn Bá Anh Tuấn"}
+                            {/* <b>Bài tập lớn môn Lập trình ứng dụng Web</b><br/>
+                            <b>Thực hiện bởi:</b> {" Trần Xuân Bách, Đặng Thế Hoàng Anh, Nguyễn Việt Anh, Hoàng Hữu Bách, Nguyễn Bá Anh Tuấn"} */}
                             
                             <br/>
                         </div>

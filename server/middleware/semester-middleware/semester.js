@@ -52,7 +52,14 @@ async function fGetAllSemester(req, res) {
 async function fHandleUploadSemester(req, res) {
     let success = [];
     let fail = [];
-    const jsonArray = await csv().fromFile(req.fileUploadPath);
+    try {
+        // Validate file extension to be .csv
+        if (!req.fileUploadPath || !req.fileUploadPath.toLowerCase().endsWith('.csv')) {
+            res.status(400);
+            res.json(RES_FORM("Error", "Vui lòng tải file .csv cho danh sách kì học"));
+            return;
+        }
+        const jsonArray = await csv().fromFile(req.fileUploadPath);
         // let res = await global.DBConnection.Test.insertMany(jsonArray, { ordered: false })
     class fakeRes {
         statusCode = null;
@@ -71,22 +78,26 @@ async function fHandleUploadSemester(req, res) {
         }
     }
     
-    for (var i of jsonArray) {
-        var fakeReqInstance = new fakeReq(i);
-        var fakeResInstance = new fakeRes();
-        await fAddSemester(fakeReqInstance, fakeResInstance);
-        if (fakeResInstance.statusCode != 200) {
-            if (fakeResInstance.responseJson && fakeResInstance.responseJson.message)
-                i.error = fakeResInstance.responseJson.message;
-            fail.push(i);
-        } else {
-            i.response = fakeResInstance.responseJson.message;
-            success.push(i);
+        for (var i of jsonArray) {
+            var fakeReqInstance = new fakeReq(i);
+            var fakeResInstance = new fakeRes();
+            await fAddSemester(fakeReqInstance, fakeResInstance);
+            if (fakeResInstance.statusCode != 200) {
+                if (fakeResInstance.responseJson && fakeResInstance.responseJson.message)
+                    i.error = fakeResInstance.responseJson.message;
+                fail.push(i);
+            } else {
+                i.response = fakeResInstance.responseJson.message;
+                success.push(i);
+            }
+            
         }
-        
+        res.status(200);
+        res.json(RES_FORM("Success", {registered : success, failed: fail}));
+    } catch(e) {
+        res.status(400);
+        res.json(RES_FORM("Error", "Không thể đọc file tải lên. Vui lòng kiểm tra định dạng .csv và nội dung."));
     }
-    res.status(200);
-    res.json(RES_FORM("Success", {registered : success, failed: fail}));
 }
 
 module.exports = {fAddSemester, fGetSemester, fHandleUploadSemester, fGetAllSemester}
