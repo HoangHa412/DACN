@@ -385,4 +385,65 @@ async function fHandleUploadScore(req, res) {
     res.status(200);
     res.json(RES_FORM("Success", {registered : success, failed: fail}));
 }
-module.exports = {fDownloadScoresClassByClassId, fHandleUploadStatus, fGetScoresClassByClassId, fAddScoreToScoresTable, checkTeacherOfVNUId, checkTargetAddScoreExist, fGetScoresByVNUId, fHandleUploadScore, fUpdateStatus}
+async function fUpdateScore(req, res) {
+    try {
+        const studentVNUId = req.body.vnu_id;
+        const subjectCode = req.body.subject_code;
+        const semesterId = req.body.semester_id; // expects DB _id like other flows
+        const newScore = req.body.score;
+
+        if (newScore == null || isNaN(Number(newScore))) {
+            res.status(400);
+            res.json(RES_FORM("Error", "Giá trị điểm không hợp lệ"));
+            return;
+        }
+
+        const user = await global.DBConnection.User.findOne({ vnu_id: studentVNUId });
+        if (!user) {
+            res.status(404);
+            res.json(RES_FORM("Error", "Không tìm thấy sinh viên"));
+            return;
+        }
+        const subject = await global.DBConnection.Subject.findOne({ subject_code: subjectCode });
+        if (!subject) {
+            res.status(404);
+            res.json(RES_FORM("Error", "Không tìm thấy môn học"));
+            return;
+        }
+
+        const scoresTable = await global.DBConnection.ScoresTable.findOne({ user_ref: user._id }).populate({
+            path: "scores",
+            populate: { path: "subject" }
+        });
+        if (!scoresTable) {
+            res.status(404);
+            res.json(RES_FORM("Error", "Chưa có bảng điểm cho sinh viên này"));
+            return;
+        }
+
+        let updated = false;
+        for (let s of scoresTable.scores) {
+            const matchSubject = s.subject && s.subject.subject_code === subjectCode;
+            const matchSemester = semesterId ? (s.semester_id && s.semester_id.toString() === semesterId) : true;
+            if (matchSubject && matchSemester) {
+                s.score = Number(newScore);
+                await s.save();
+                updated = true;
+            }
+        }
+
+        if (!updated) {
+            res.status(404);
+            res.json(RES_FORM("Error", "Không tìm thấy bản ghi điểm tương ứng để cập nhật"));
+            return;
+        }
+
+        res.status(200);
+        res.json(RES_FORM("Success", "Cập nhật điểm thành công"));
+    } catch (e) {
+        res.status(400);
+        res.json(RES_FORM("Error", `Lỗi khi cập nhật điểm: ${e}`));
+    }
+}
+
+module.exports = {fDownloadScoresClassByClassId, fHandleUploadStatus, fGetScoresClassByClassId, fAddScoreToScoresTable, checkTeacherOfVNUId, checkTargetAddScoreExist, fGetScoresByVNUId, fHandleUploadScore, fUpdateStatus, fUpdateScore}

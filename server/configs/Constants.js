@@ -28,6 +28,7 @@ const API_PATH = {
     UPLOAD_SV_STATUS: "/api/status/import",
     UPLOAD_FILE : "/api/upload/file",
     ADD_SCORE_BY_VNU_ID: "/api/scores/add",
+    UPDATE_SCORE_BY_VNU_ID: "/api/scores/update",
     GET_SCORES_BY_ID : "/api/scores/:userId",
     DOWNLOAD_SCORES_CLASS: "/api/scores/download/:classId/:semesterId",
     GET_SEMESTER_BY_ID: "/api/semesters/:semesterId",

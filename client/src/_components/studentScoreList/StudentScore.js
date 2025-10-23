@@ -49,6 +49,13 @@ function StudentScore(props) {
             var totalCredit = 0;
             var totalScore = 0;
 
+            // build semester filter list once
+            const semesterList = semesters.map(semester => ({
+                text: semester.semester_name,
+                value: semester.semester_name
+            }));
+            setSemList(semesterList);
+
             fetchedScore.forEach(element => {
                 var convertedSemester = {
                     semester_id: '00000',
@@ -68,16 +75,7 @@ function StudentScore(props) {
                     }
                 });
 
-                var semesterList = [];
-                semesters.forEach(semester => {
-                    semesterList.push({
-                        text: semester.semester_name,
-                        value: semester.semester_name
-                    })
-                })
-                setSemList(semesterList);
-                console.log("Semester List");
-                console.log(semList);
+                // semester filter list set above to avoid repeated updates per-row
 
                 convertedScore.push({
                     subject_name : element.subject.subject_name,
@@ -86,6 +84,7 @@ function StudentScore(props) {
                     score : element.score,
                     scoref : Number.parseFloat(element.score*0.4).toFixed(2),
                     semester_name : convertedSemester.semester_name,
+                    semester_id_raw : element.semester_id,
                 })
                 totalCredit += element.subject.credits_number;
                 totalScore += element.subject.credits_number*element.score;
@@ -113,9 +112,53 @@ function StudentScore(props) {
         initScore();
     }, [props.vnu_id]);
 
+    async function reload() {
+        // trigger re-run by changing dependency value; simplest is to call same logic directly
+        // Reuse effect logic by temporarily calling the internal fetch again
+        const newData = await (props.isPersonal === true
+            ? studentScoreAction.getMyScore()
+            : studentScoreAction.getScoreByID(props.vnu_id));
+        const semesters = await studentScoreAction.getAllSemester();
+        setPScore(newData);
+        const fetchedScore = newData.scores;
+        const convertedScore = [];
+        let totalCredit = 0;
+        let totalScore = 0;
+        fetchedScore.forEach(element => {
+            let convertedSemester = { semester_id: '00000', semester_name: 'Kì học không xác định' };
+            semesters.forEach(semester => {
+                if (semester._id === element.semester_id) {
+                    convertedSemester = { semester_id: semester.semester_id, semester_name: semester.semester_name };
+                }
+            });
+            convertedScore.push({
+                subject_name: element.subject.subject_name,
+                subject_code: element.subject.subject_code,
+                credits_number: element.subject.credits_number,
+                score: element.score,
+                scoref: Number.parseFloat(element.score * 0.4).toFixed(2),
+                semester_name: convertedSemester.semester_name,
+                semester_id_raw: element.semester_id,
+            });
+            totalCredit += element.subject.credits_number;
+            totalScore += element.subject.credits_number * element.score;
+        });
+        setScoreboard(convertedScore);
+        const CPA = ((totalScore / totalCredit) / 10 * 4).toFixed(2);
+        let state = (CPA > 2.5) ? ['Bình thường'] : ['Cảnh cáo'];
+        state = (CPA < 1) ? ['Đuổi học'] : state;
+        setScoreTotal({
+            name: newData.user_ref.name,
+            vnu_id: newData.user_ref.vnu_id,
+            total_credits: totalCredit,
+            cpa: CPA,
+            stt: state
+        });
+    }
+
     return (
         <div>
-            <Scoreboard scoreboard={scoreboard} scoreTotal ={scoreTotal} semesterList= {semList} isPersonal={props.isPersonal}></Scoreboard>
+            <Scoreboard scoreboard={scoreboard} scoreTotal ={scoreTotal} semesterList= {semList} isPersonal={props.isPersonal} vnu_id={props.vnu_id} onUpdated={reload}></Scoreboard>
         </div>
     );
 }

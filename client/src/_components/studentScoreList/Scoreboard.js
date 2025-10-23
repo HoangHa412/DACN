@@ -1,6 +1,7 @@
 import React ,{useEffect, useState} from 'react';
 import 'antd/dist/antd.css';
-import { Table, Typography, Row, Col, Switch, Button} from 'antd';
+import { Table, Typography, Row, Col, Switch, Button, Input, Space, message} from 'antd';
+import { useStudentScoreAction } from '_actions';
 import { Link } from 'react-router-dom';
 import { WechatOutlined, UserOutlined } from '@ant-design/icons';
 
@@ -11,11 +12,14 @@ export { Scoreboard };
 function Scoreboard(props) {
 
     // console.log(props);
+    const studentScoreAction = useStudentScoreAction();
     const [scoreType, setScoreType] = useState({
         decimal: true
     });
 
     const [scoreFilter, setScoreTotal] = useState(null)
+    const [editingKey, setEditingKey] = useState(null);
+    const [editingValue, setEditingValue] = useState('');
 
     function onChange(checked) {
         setScoreType({
@@ -48,6 +52,44 @@ function Scoreboard(props) {
             dataIndex: 'score',
             key: 'score',
             width: 110,
+            render: (text, record) => {
+                const isEditing = editingKey === record.subject_code + '_' + record.semester_id_raw;
+                if (!props.isPersonal) {
+                    return isEditing ? (
+                        <Space>
+                            <Input value={editingValue} onChange={e => setEditingValue(e.target.value)} size="small" style={{ width: 80 }} />
+                            <Button size="small" type="primary" onClick={async () => {
+                                const val = Number(editingValue);
+                                if (isNaN(val) || val < 0 || val > 10) {
+                                    message.error('Điểm phải từ 0 đến 10');
+                                    return;
+                                }
+                                const res = await studentScoreAction.updateScoreByVNUId({
+                                    vnu_id: props.scoreTotal.vnu_id,
+                                    subject_code: record.subject_code,
+                                    semester_id: record.semester_id_raw,
+                                    score: val
+                                });
+                                if (res && res.status === 'Success') {
+                                    message.success('Đã lưu điểm');
+                                    setEditingKey(null);
+                                    setEditingValue('');
+                                    if (props.onUpdated) props.onUpdated();
+                                } else {
+                                    message.error(res?.message || 'Lưu điểm thất bại');
+                                }
+                            }}>Lưu</Button>
+                            <Button size="small" onClick={() => { setEditingKey(null); setEditingValue(''); }}>Huỷ</Button>
+                        </Space>
+                    ) : (
+                        <Space>
+                            <span>{text}</span>
+                            <Button size="small" onClick={() => { setEditingKey(record.subject_code + '_' + record.semester_id_raw); setEditingValue(String(text)); }}>Sửa</Button>
+                        </Space>
+                    );
+                }
+                return text;
+            }
         },
         {
             title: 'Điểm hệ 4',
@@ -80,10 +122,10 @@ function Scoreboard(props) {
             <Col flex="250px">
                 <Title level={4}>{props.scoreTotal.name}</Title>
                 <div>
-                    <b>VNU ID:</b> {props.scoreTotal.vnu_id}
+                    <b>Mã sinh viên:</b> {props.scoreTotal.vnu_id}
                     <br/>
                     <br/>
-                    <b>CPA:</b> {props.scoreTotal.cpa}
+                    <b>GPA:</b> {props.scoreTotal.cpa}
                     <br/>
                     <b>Số tín chỉ:</b> {props.scoreTotal.total_credits}
                     <br/>

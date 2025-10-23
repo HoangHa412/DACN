@@ -75,6 +75,14 @@ function useStudentScoreAction (param) {
         return rawjson.message;
     }
 
+    async function updateScoreByVNUId({ vnu_id, subject_code, semester_id, score }){
+        const body = JSON.stringify({ vnu_id, subject_code, semester_id, score });
+        const response = await fetchWrapper.post(`http://localhost:3000/api/scores/update`, 'application/json', body);
+        if (response == null) return null;
+        let rawjson = await response.json();
+        return rawjson;
+    }
+
 
     function setScoreData (rawjson) {
         let data = rawjson.message
@@ -141,5 +149,6 @@ function useStudentScoreAction (param) {
         getSemesterByID : getSemesterByID,
         getAllSemester : getAllSemester,
         handleData : handleData,
+        updateScoreByVNUId : updateScoreByVNUId,
     }
 }

@@ -127,7 +127,7 @@ function ProfileForm(props) {
                         <Input defaultValue = {data.name} />
                     </Form.Item>
                     
-                    <Form.Item label="HAUI ID" name = "vnu_id">
+                    <Form.Item label="Mã sinh viên" name = "vnu_id">
                         {(userData.role=='student') &&
                             <Input disabled defaultValue = {data.vnu_id} />
                         }

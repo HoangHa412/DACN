@@ -99,7 +99,7 @@ function Nav(props) {
               <>
                 <Menu.Item key={`/${classWrapper.curClass.class_id}/dashboard`}>
                   <DashboardOutlined />
-                  <span>Dashboard</span>
+                  <span>Báo cáo và Thống kê</span>
                   <Link to={`/${classWrapper.curClass.class_id}/dashboard`}></Link>
                 </Menu.Item>
                 <Menu.Item key="/chat">
